@@ -9,11 +9,11 @@
     </js-module>
     <platform name="android">
         <config-file target="config.xml" parent="/*">
-            <feature name="Device">
-                <param name="android-package" value="de.equeo.cordova.plugin.beacon"/>
+            <feature name="BeaconPlugin">
+                <param name="android-package" value="de.equeo.cordova.plugins.beacon.BeaconPlugin"/>
             </feature>
         </config-file>
-        <source-file src="src/android/BeaconPlugin.java" />
+        <source-file src="src/android/BeaconPlugin.java" target-dir="src/de/equeo/cordova/plugins/beacon" />
         <framework src="src/android/cordova-plugin-beacon.gradle" custom="true" type="gradleReference" />
     </platform>
 </plugin>
