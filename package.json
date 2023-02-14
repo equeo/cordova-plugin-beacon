@@ -1,0 +1,33 @@
+{
+  "type": "module",
+  "name": "cordova-plugin-beacon",
+  "version": "0.0.1",
+  "description": "Beacon functionality in cordova.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "source": "src/interface/index.ts",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/equeo/cordova-plugin-beacon.git"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios"
+  ],
+  "author": "equeo GmbH",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/equeo/cordova-plugin-beacon/issues"
+  },
+  "homepage": "https://github.com/equeo/cordova-plugin-beacon#readme",
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.0.0",
+    "rollup": "^3.15.0",
+    "tslib": "^2.5.0",
+    "typescript": "^4.9.5"
+  }
+}

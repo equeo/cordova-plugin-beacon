@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-beacon" version="0.0.1">
+    <name>Beacon</name>
+    <description>Cordova Beacon Plugin</description>
+    <keywords>cordova,beacon</keywords>
+    <js-module src="dist/index.js" name="index">
+        <clobbers target="cordova.plugins.beacon" />
+    </js-module>
+    <platform name="android">
+        <config-file target="config.xml" parent="/*">
+            <feature name="Device">
+                <param name="android-package" value="de.equeo.cordova.plugin.beacon"/>
+            </feature>
+        </config-file>
+        <source-file src="src/android/BeaconPlugin.java" />
+        <framework src="src/android/cordova-plugin-beacon.gradle" custom="true" type="gradleReference" />
+    </platform>
+</plugin>
