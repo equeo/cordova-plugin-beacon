@@ -12,8 +12,8 @@
             <feature name="BeaconPlugin">
                 <param name="android-package" value="de.equeo.cordova.plugins.beacon.BeaconPlugin"/>
             </feature>
-            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+            <uses-permission name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission name="android.permission.BLUETOOTH_SCAN" />
         </config-file>
         <source-file src="src/android/BeaconPlugin.java" target-dir="src/de/equeo/cordova/plugins/beacon" />
         <framework src="src/android/cordova-plugin-beacon.gradle" custom="true" type="gradleReference" />
