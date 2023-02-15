@@ -2,8 +2,6 @@ package de.equeo.cordova.plugins.beacon;
 
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
@@ -20,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,32 +26,47 @@ import java.util.Map;
 public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, RangeNotifier {
 
     public static final String TAG = "BeaconPlugin";
-    public static final String IBEACON_LAYOUT = "m:0-3=4c000215,i:4-19,i:20-21,i:22-23,p:24-24";
+    public static final String BEACON_LAYOUT = "m:0-3=4c000215,i:4-19,i:20-21,i:22-23,p:24-24";
 
     private BeaconManager beaconManager;
-    private Map<String, CallbackContext> monitorCallbackMap = new HashMap();
-    private Map<String, CallbackContext> rangeCallbackMap = new HashMap();
+    private final Map<String, CallbackContext> monitorCallbackMap = new HashMap<>();
+    private final Map<String, CallbackContext> rangeCallbackMap = new HashMap<>();
 
     @Override
     public void pluginInitialize() {
         Log.d(TAG, "pluginInitialize");
         beaconManager = BeaconManager.getInstanceForApplication(cordova.getActivity());
-        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON_LAYOUT));
+        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BEACON_LAYOUT));
         beaconManager.addMonitorNotifier(this);
         beaconManager.addRangeNotifier(this);
     }
 
     private Region regionFromJSON(JSONObject regionObject) throws JSONException {
         String uniqueId = regionObject.getString("uniqueId");
-        String identifier = regionObject.getString("identifier");
-        if (identifier.equals("null")) return new Region(uniqueId, null, null, null);
-        return new Region(uniqueId, identifier);
+        try {
+            JSONArray identifiersJSONArray = regionObject.getJSONArray("identifiers");
+            ArrayList<Identifier> identifiers = new ArrayList<>();
+            for (int index = 0; index < identifiersJSONArray.length(); index++) {
+                String current = identifiersJSONArray.getString(index);
+                if (current.equals("null")) identifiers.add(null);
+                else identifiers.add(Identifier.parse(current));
+            }
+            return new Region(uniqueId, identifiers);
+        } catch (JSONException e) {
+            return new Region(uniqueId, null, null, null);
+        }
+
     }
 
     private JSONObject regionToJSON(Region region) throws JSONException {
         JSONObject regionObject = new JSONObject();
         regionObject.put("uniqueId", region.getUniqueId());
-        regionObject.put("identifier", region.getIdentifier(0));
+        JSONArray identifiersJSONArray = new JSONArray();
+        for (Identifier id : region.getIdentifiers()) {
+            if (id == null) identifiersJSONArray.put(null);
+            else identifiersJSONArray.put(id.toString());
+        }
+        regionObject.put("identifiers", identifiersJSONArray);
         return regionObject;
     }
 
@@ -92,7 +106,7 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
     }
 
     @Override
-    public boolean execute(@NonNull String action, @NonNull JSONArray args, CallbackContext callbackContext) {
+    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         Log.d(TAG, "execute");
         try {
             Region region = regionFromJSON(args.getJSONObject(0));
@@ -119,85 +133,133 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
         return true;
     }
 
-    private void startMonitoring(@NonNull Region region, CallbackContext ctx) {
+    private void startMonitoring(Region region, CallbackContext ctx) {
         Log.d(TAG, "startMonitoring");
-        if (monitorCallbackMap.containsKey(region.getUniqueId())) {
+
+        try {
+            assert !monitorCallbackMap.containsKey(region.getUniqueId());
+
+            beaconManager.startMonitoring(region);
+            monitorCallbackMap.put(region.getUniqueId(), ctx);
+
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "meta");
+
+            resultData.put("message", PluginResult.Status.OK);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
+            result.setKeepCallback(true);
+            ctx.sendPluginResult(result);
+        } catch (AssertionError e) {
             PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Already monitoring for Region " + region.getUniqueId() + ".");
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
-            return;
+        } catch (JSONException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
+            result.setKeepCallback(true);
+            ctx.sendPluginResult(result);
         }
-
-        beaconManager.startMonitoring(region);
-
-        PluginResult result = new PluginResult(PluginResult.Status.OK, (String) null);
-        result.setKeepCallback(true);
-        monitorCallbackMap.put(region.getUniqueId(), ctx);
-        ctx.sendPluginResult(result);
     }
 
-    private void stopMonitoring(@NonNull Region region, CallbackContext ctx) {
+    private void stopMonitoring(Region region, CallbackContext ctx) {
         Log.d(TAG, "stopMonitoring");
-        if (!monitorCallbackMap.containsKey(region.getUniqueId())) {
-            ctx.error("Not monitoring for Region " + region.getUniqueId() + ".");
-            return;
-        }
 
         beaconManager.stopMonitoring(region);
 
-        CallbackContext monitorCtx = monitorCallbackMap.get(region.getUniqueId());
-        PluginResult monitorResult = new PluginResult(PluginResult.Status.OK, (String) null);
-        monitorResult.setKeepCallback(false);
-        monitorCtx.sendPluginResult(monitorResult);
+        try {
+            CallbackContext monitorCtx = monitorCallbackMap.get(region.getUniqueId());
+            assert monitorCtx != null;
 
-        monitorCallbackMap.remove(region.getUniqueId());
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "meta");
+
+            resultData.put("message", PluginResult.Status.OK);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
+            result.setKeepCallback(false);
+            monitorCtx.sendPluginResult(result);
+
+            monitorCallbackMap.remove(region.getUniqueId());
+        } catch (AssertionError e) {
+            ctx.error("Not monitoring for Region " + region.getUniqueId() + ".");
+        } catch (JSONException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
+            result.setKeepCallback(false);
+            ctx.sendPluginResult(result);
+        }
     }
 
-    private void startRanging(@NonNull Region region, CallbackContext ctx) {
+    private void startRanging(Region region, CallbackContext ctx) {
         Log.d(TAG, "startRanging");
-        if (rangeCallbackMap.containsKey(region.getUniqueId())) {
+
+        try {
+            assert !rangeCallbackMap.containsKey(region.getUniqueId());
+
+            beaconManager.startRangingBeacons(region);
+            rangeCallbackMap.put(region.getUniqueId(), ctx);
+
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "meta");
+
+            resultData.put("message", PluginResult.Status.OK);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
+            result.setKeepCallback(true);
+            ctx.sendPluginResult(result);
+        } catch (AssertionError e) {
             PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Already ranging for Region " + region.getUniqueId() + ".");
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
-            return;
+        } catch (JSONException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
+            result.setKeepCallback(true);
+            ctx.sendPluginResult(result);
         }
-
-        beaconManager.startRangingBeacons(region);
-
-        PluginResult result = new PluginResult(PluginResult.Status.OK, (String) null);
-        result.setKeepCallback(true);
-        rangeCallbackMap.put(region.getUniqueId(), ctx);
-        ctx.sendPluginResult(result);
     }
 
-    private void stopRanging(@NonNull Region region, CallbackContext ctx) {
+    private void stopRanging(Region region, CallbackContext ctx) {
         Log.d(TAG, "stopRanging");
-        if (!rangeCallbackMap.containsKey(region.getUniqueId())) {
-            ctx.error("Not monitoring for Region " + region.getUniqueId() + ".");
-            return;
-        }
 
         beaconManager.stopRangingBeacons(region);
 
-        CallbackContext regionCtx = rangeCallbackMap.get(region.getUniqueId());
-        PluginResult regionResult = new PluginResult(PluginResult.Status.OK, (String) null);
-        regionResult.setKeepCallback(false);
-        regionCtx.sendPluginResult(regionResult);
+        try {
+            CallbackContext regionCtx = rangeCallbackMap.get(region.getUniqueId());
+            assert regionCtx != null;
+
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "meta");
+
+            resultData.put("message", PluginResult.Status.OK);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
+            result.setKeepCallback(false);
+            regionCtx.sendPluginResult(result);
+        } catch (AssertionError e) {
+            ctx.error("Not ranging for Region " + region.getUniqueId() + ".");
+        } catch (JSONException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
+            result.setKeepCallback(false);
+            ctx.sendPluginResult(result);
+        }
 
         rangeCallbackMap.remove(region.getUniqueId());
     }
 
     @Override
-    public void didEnterRegion(@NonNull Region region) {
+    public void didEnterRegion(Region region) {
         Log.d(TAG, "didEnterRegion");
 
         CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
         if (ctx == null) return;
 
         try {
-            JSONObject regionObject = regionToJSON(region);
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "data");
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, regionObject);
+            JSONObject messageObject = regionToJSON(region);
+            resultData.put("message", messageObject);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
@@ -208,16 +270,20 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
     }
 
     @Override
-    public void didExitRegion(@NonNull Region region) {
+    public void didExitRegion(Region region) {
         Log.d(TAG, "didExitRegion");
 
         CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
         if (ctx == null) return;
 
         try {
-            JSONObject regionObject = regionToJSON(region);
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "data");
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, regionObject);
+            JSONObject messageObject = regionToJSON(region);
+            resultData.put("message", messageObject);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
@@ -228,16 +294,20 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
     }
 
     @Override
-    public void didDetermineStateForRegion(int state, @NonNull Region region) {
+    public void didDetermineStateForRegion(int state, Region region) {
         Log.d(TAG, "didDetermineStateForRegion");
 
         CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
         if (ctx == null) return;
 
         try {
-            JSONObject regionObject = regionToJSON(region);
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "data");
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, regionObject);
+            JSONObject messageObject = regionToJSON(region);
+            resultData.put("message", messageObject);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
@@ -248,20 +318,26 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
     }
 
     @Override
-    public void didRangeBeaconsInRegion(@NonNull Collection<Beacon> beacons, @NonNull Region region) {
+    public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
         Log.d(TAG, "didRangeBeaconsInRegion");
 
         CallbackContext ctx = rangeCallbackMap.get(region.getUniqueId());
         if (ctx == null) return;
 
         try {
-            JSONObject regionObject = regionToJSON(region);
+            JSONObject resultData = new JSONObject();
+            resultData.put("type", "data");
+
+            JSONObject messageObject = regionToJSON(region);
+
             JSONArray beaconsArray = new JSONArray();
             for (Beacon beacon : beacons)
                 beaconsArray.put(beaconToJSON(beacon));
-            regionObject.put("beacons", beaconsArray);
+            messageObject.put("beacons", beaconsArray);
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, regionObject);
+            resultData.put("message", messageObject);
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
