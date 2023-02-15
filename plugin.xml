@@ -20,4 +20,29 @@
         <source-file src="src/android/BeaconPlugin.java" target-dir="src/de/equeo/cordova/plugins/beacon" />
         <framework src="src/android/cordova-plugin-beacon.gradle" custom="true" type="gradleReference" />
     </platform>
+ <platform name="ios">
+        <config-file target="config.xml" parent="/*" >
+            <feature name="BeaconPlugin">
+                <param name="ios-package" value="BeaconPlugin"/>
+            </feature>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
+            <string>This app would like to scan for iBeacons even when in the background.</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSLocationWhenInUseUsageDescription">
+            <string>This app would like to scan for iBeacons while it is in use.</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSBluetoothPeripheralUsageDescription">
+            <string>This app would like to scan for iBeacons.</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSLocationAlwaysAndWhenInUseUsageDescription">
+            <string>This app would like to scan for iBeacons both while in use and while in the background.</string>
+        </config-file>
+
+        <header-file src="src/ios/BeaconPlugin.h"/>
+        <source-file src="src/ios/BeaconPlugin.m"/>
+        
+        <framework src="CoreBluetooth.framework" />
+        <framework src="CoreLocation.framework" />
+    </platform>
 </plugin>
