@@ -248,49 +248,11 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
     @Override
     public void didEnterRegion(Region region) {
         Log.d(TAG, "didEnterRegion");
-
-        CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
-        if (ctx == null) return;
-
-        try {
-            JSONObject resultData = new JSONObject();
-            resultData.put("type", "data");
-
-            JSONObject messageObject = regionToJSON(region);
-            resultData.put("message", messageObject);
-
-            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
-            result.setKeepCallback(true);
-            ctx.sendPluginResult(result);
-        } catch (JSONException e) {
-            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
-            result.setKeepCallback(true);
-            ctx.sendPluginResult(result);
-        }
     }
 
     @Override
     public void didExitRegion(Region region) {
         Log.d(TAG, "didExitRegion");
-
-        CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
-        if (ctx == null) return;
-
-        try {
-            JSONObject resultData = new JSONObject();
-            resultData.put("type", "data");
-
-            JSONObject messageObject = regionToJSON(region);
-            resultData.put("message", messageObject);
-
-            PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
-            result.setKeepCallback(true);
-            ctx.sendPluginResult(result);
-        } catch (JSONException e) {
-            PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
-            result.setKeepCallback(true);
-            ctx.sendPluginResult(result);
-        }
     }
 
     @Override
@@ -305,6 +267,7 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
             resultData.put("type", "data");
 
             JSONObject messageObject = regionToJSON(region);
+            messageObject.put("state", state);
             resultData.put("message", messageObject);
 
             PluginResult result = new PluginResult(PluginResult.Status.OK, resultData);
@@ -329,6 +292,7 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
             resultData.put("type", "data");
 
             JSONObject messageObject = regionToJSON(region);
+            messageObject.remove("identifiers");
 
             JSONArray beaconsArray = new JSONArray();
             for (Beacon beacon : beacons)
