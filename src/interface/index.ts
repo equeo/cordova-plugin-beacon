@@ -17,6 +17,13 @@ declare global {
   }
 }
 
+type RegionObject = Pick<
+  Region,
+  {
+    [Key in keyof Region]: Region[Key] extends Function ? never : Key;
+  }[keyof Region]
+>;
+
 interface Beacon {
   identifiers: string[];
 }
@@ -26,16 +33,16 @@ interface MetaResult {
   message: unknown;
 }
 
-interface MonitoringResult {
+interface MonitoringEvent {
   type: "monitor";
-  message: Region;
+  message: { state: 0 | 1 } & RegionObject;
 }
 
-interface RangingResult {
+interface RangingEvent {
   type: "range";
   message: {
     beacons: Beacon[];
-  } & Region;
+  } & Omit<RegionObject, "identifiers">;
 }
 
 type CordovaExecResult<T> = MetaResult | T;
@@ -47,14 +54,14 @@ class Region {
   ) {}
 
   startMonitoring = (
-    cb: (event: MonitoringResult) => void,
+    cb: (event: MonitoringEvent) => void,
     success: (result: MetaResult) => void,
     error: (error: unknown) => void
   ) =>
     window.cordova.exec(
-      (result: CordovaExecResult<MonitoringResult>) => {
+      (result: CordovaExecResult<MonitoringEvent>) => {
         if (result.type === "meta") return success(result);
-        return cb(result as MonitoringResult);
+        return cb(result as MonitoringEvent);
       },
       error,
       "BeaconPlugin",
@@ -67,12 +74,12 @@ class Region {
     ]);
 
   startRanging = (
-    cb: (event: RangingResult) => void,
+    cb: (event: RangingEvent) => void,
     success: (result: MetaResult) => void,
     error: (error: unknown) => void
   ) =>
     window.cordova.exec(
-      (result: CordovaExecResult<RangingResult>) => {
+      (result: CordovaExecResult<RangingEvent>) => {
         if (result.type === "meta") return success(result);
         return cb(result);
       },

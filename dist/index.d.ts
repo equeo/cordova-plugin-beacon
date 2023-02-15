@@ -10,6 +10,9 @@ declare global {
         };
     }
 }
+type RegionObject = Pick<Region, {
+    [Key in keyof Region]: Region[Key] extends Function ? never : Key;
+}[keyof Region]>;
 interface Beacon {
     identifiers: string[];
 }
@@ -17,23 +20,25 @@ interface MetaResult {
     type: "meta";
     message: unknown;
 }
-interface MonitoringResult {
+interface MonitoringEvent {
     type: "monitor";
-    message: Region;
+    message: {
+        state: 0 | 1;
+    } & RegionObject;
 }
-interface RangingResult {
+interface RangingEvent {
     type: "range";
     message: {
         beacons: Beacon[];
-    } & Region;
+    } & Omit<RegionObject, "identifiers">;
 }
 declare class Region {
     readonly uniqueId: string;
     readonly identifiers: string[];
     constructor(uniqueId: string, identifiers: string[]);
-    startMonitoring: (cb: (event: MonitoringResult) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
+    startMonitoring: (cb: (event: MonitoringEvent) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
     stopMonitoring: (success: () => void, error: () => void) => void;
-    startRanging: (cb: (event: RangingResult) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
+    startRanging: (cb: (event: RangingEvent) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
     stopRanging: (success: () => void, error: () => void) => void;
 }
 export { Region };
