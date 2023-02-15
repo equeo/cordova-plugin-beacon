@@ -13,24 +13,27 @@ declare global {
 interface Beacon {
     identifiers: string[];
 }
-interface MonitoringResult {
-    readonly uniqueId: string;
-    readonly identifier: string | null;
-    readonly minor?: string;
-    readonly major?: string;
+interface MetaResult {
+    type: "meta";
+    message: unknown;
 }
-type RangingResult = MonitoringResult & {
-    beacons: Beacon[];
-};
+interface MonitoringResult {
+    type: "monitor";
+    message: Region;
+}
+interface RangingResult {
+    type: "range";
+    message: {
+        beacons: Beacon[];
+    } & Region;
+}
 declare class Region {
     readonly uniqueId: string;
-    readonly identifier: string | null;
-    readonly minor?: string | undefined;
-    readonly major?: string | undefined;
-    constructor(uniqueId: string, identifier: string | null, minor?: string | undefined, major?: string | undefined);
-    startMonitoring: (success: (event?: MonitoringResult | null) => void, error: (error: unknown) => void) => void;
+    readonly identifiers: string[];
+    constructor(uniqueId: string, identifiers: string[]);
+    startMonitoring: (cb: (event: MonitoringResult) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
     stopMonitoring: (success: () => void, error: () => void) => void;
-    startRanging: (success: (event?: RangingResult | null) => void, error: (error: unknown) => void) => void;
+    startRanging: (cb: (event: RangingResult) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
     stopRanging: (success: () => void, error: () => void) => void;
 }
 export { Region };

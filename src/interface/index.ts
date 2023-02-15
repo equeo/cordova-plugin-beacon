@@ -21,40 +21,66 @@ interface Beacon {
   identifiers: string[];
 }
 
-interface MonitoringResult {
-  readonly uniqueId: string;
-  readonly identifier: string | null;
-  readonly minor?: string;
-  readonly major?: string;
+interface MetaResult {
+  type: "meta";
+  message: unknown;
 }
 
-type RangingResult = MonitoringResult & { beacons: Beacon[] };
+interface MonitoringResult {
+  type: "monitor";
+  message: Region;
+}
+
+interface RangingResult {
+  type: "range";
+  message: {
+    beacons: Beacon[];
+  } & Region;
+}
+
+type CordovaExecResult<T> = MetaResult | T;
 
 class Region {
   constructor(
     public readonly uniqueId: string,
-    public readonly identifier: string | null,
-    public readonly minor?: string,
-    public readonly major?: string
+    public readonly identifiers: string[]
   ) {}
 
   startMonitoring = (
-    success: (event?: MonitoringResult | null) => void,
+    cb: (event: MonitoringResult) => void,
+    success: (result: MetaResult) => void,
     error: (error: unknown) => void
   ) =>
-    window.cordova.exec(success, error, "BeaconPlugin", "startMonitoring", [
-      this,
-    ]);
+    window.cordova.exec(
+      (result: CordovaExecResult<MonitoringResult>) => {
+        if (result.type === "meta") return success(result);
+        return cb(result as MonitoringResult);
+      },
+      error,
+      "BeaconPlugin",
+      "startMonitoring",
+      [this]
+    );
   stopMonitoring = (success: () => void, error: () => void) =>
     window.cordova.exec(success, error, "BeaconPlugin", "stopMonitoring", [
       this,
     ]);
 
   startRanging = (
-    success: (event?: RangingResult | null) => void,
+    cb: (event: RangingResult) => void,
+    success: (result: MetaResult) => void,
     error: (error: unknown) => void
   ) =>
-    window.cordova.exec(success, error, "BeaconPlugin", "startRanging", [this]);
+    window.cordova.exec(
+      (result: CordovaExecResult<RangingResult>) => {
+        if (result.type === "meta") return success(result);
+        return cb(result);
+      },
+      error,
+      "BeaconPlugin",
+      "startRanging",
+      [this]
+    );
   stopRanging = (success: () => void, error: () => void) =>
     window.cordova.exec(success, error, "BeaconPlugin", "stopRanging", [this]);
 }
