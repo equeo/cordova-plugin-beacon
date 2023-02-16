@@ -25,6 +25,7 @@ type RangingResult = MonitoringResult & {
 declare class Region {
     readonly uniqueId: string;
     readonly identifier: string | null;
+    readonly typeName: string | null;
     readonly minor?: string | undefined;
     readonly major?: string | undefined;
     constructor(uniqueId: string, identifier: string | null, minor?: string | undefined, major?: string | undefined);

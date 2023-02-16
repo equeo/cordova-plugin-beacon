@@ -10,7 +10,7 @@ typedef CDVPluginResult* (^CDVPluginCommandHandler)(CDVInvokedUrlCommand*);
 const double CDV_LOCATION_MANAGER_DOM_DELEGATE_TIMEOUT = 30.0;
 const int CDV_LOCATION_MANAGER_INPUT_PARSE_ERROR = 100;
 
-@interface CDVLocationManager : CDVPlugin<CLLocationManagerDelegate, CBPeripheralManagerDelegate> {
+@interface BeaconPlugin : CDVPlugin<CLLocationManagerDelegate, CBPeripheralManagerDelegate> {
 
 }
 
@@ -20,11 +20,7 @@ const int CDV_LOCATION_MANAGER_INPUT_PARSE_ERROR = 100;
 
 @property (retain) NSString* delegateCallbackId;
 
-@property (retain, readonly) LMLogger *logger;
 
-@property BOOL debugLogEnabled;
-
-@property BOOL debugNotificationsEnabled;
 
 @property (retain) CBPeripheralManager *peripheralManager;
 @property (retain) CLRegion *advertisedBeaconRegion;
@@ -43,42 +39,15 @@ const int CDV_LOCATION_MANAGER_INPUT_PARSE_ERROR = 100;
  *      has no way of knowing when the consumer Javascript code will actually set it's delegate on the
  *      LocationManager of the DOM.
  */
-- (void)onDomDelegateReady:(CDVInvokedUrlCommand*)command;
 
-- (void)startMonitoringForRegion:(CDVInvokedUrlCommand*)command;
-- (void)stopMonitoringForRegion:(CDVInvokedUrlCommand*)command;
-- (void)requestStateForRegion:(CDVInvokedUrlCommand*)command;
-
-- (void)isRangingAvailable:(CDVInvokedUrlCommand*)command;
-- (void)getAuthorizationStatus:(CDVInvokedUrlCommand*)command;
-- (void)requestAlwaysAuthorization:(CDVInvokedUrlCommand*)command;
-- (void)requestWhenInUseAuthorization:(CDVInvokedUrlCommand*)command;
-- (void)getMonitoredRegions:(CDVInvokedUrlCommand*)command;
-- (void)getRangedRegions:(CDVInvokedUrlCommand*)command;
-
-- (void)disableDebugNotifications:(CDVInvokedUrlCommand*)command;
-- (void)enableDebugNotifications:(CDVInvokedUrlCommand*)command;
-
-- (void)disableDebugLogs:(CDVInvokedUrlCommand*)command;
-- (void)enableDebugLogs:(CDVInvokedUrlCommand*)command;
-
-- (void)appendToDeviceLog:(CDVInvokedUrlCommand*)command;
-
-- (void)registerDelegateCallbackId:(CDVInvokedUrlCommand*)command;
-
-- (void)isAdvertisingAvailable:(CDVInvokedUrlCommand*)command;
-- (void)isAdvertising:(CDVInvokedUrlCommand*)command;
-- (void)startAdvertising:(CDVInvokedUrlCommand*)command;
-- (void)stopAdvertising:(CDVInvokedUrlCommand*)command;
-
-- (void)isMonitoringAvailableForClass:(CDVInvokedUrlCommand*)command;
 
 - (void)isBluetoothEnabled:(CDVInvokedUrlCommand*)command;
 - (void)enableBluetooth:(CDVInvokedUrlCommand*)command;
 - (void)disableBluetooth:(CDVInvokedUrlCommand*)command;
+- (void)startMonitoring:(CDVInvokedUrlCommand*)command;
+- (void)startRanging:(CDVInvokedUrlCommand*)command;
 
 
 
-- (LMLogger*) getLogger;
 
 @end
