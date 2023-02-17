@@ -34,18 +34,10 @@ interface RangingEvent {
 }
 declare class Region {
     readonly uniqueId: string;
-<<<<<<< HEAD
-    readonly identifier: string | null;
-    readonly typeName: string | null;
-    readonly minor?: string | undefined;
-    readonly major?: string | undefined;
-    constructor(uniqueId: string, identifier: string | null, minor?: string | undefined, major?: string | undefined);
-    startMonitoring: (success: (event?: MonitoringResult | null) => void, error: (error: unknown) => void) => void;
-=======
     readonly identifiers: string[];
-    constructor(uniqueId: string, identifiers: string[]);
+    readonly typeName: string;
+    constructor(uniqueId: string, identifiers: string[], typeName?: string);
     startMonitoring: (cb: (event: MonitoringEvent) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
->>>>>>> 9727cc15196e430e7c22b424060602139af68970
     stopMonitoring: (success: () => void, error: () => void) => void;
     startRanging: (cb: (event: RangingEvent) => void, success: (result: MetaResult) => void, error: (error: unknown) => void) => void;
     stopRanging: (success: () => void, error: () => void) => void;

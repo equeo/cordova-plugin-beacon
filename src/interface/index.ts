@@ -50,7 +50,8 @@ type CordovaExecResult<T> = MetaResult | T;
 class Region {
   constructor(
     public readonly uniqueId: string,
-    public readonly identifiers: string[]
+    public readonly identifiers: string[],
+    public readonly typeName: string = "BeaconRegion"
   ) {}
 
   startMonitoring = (
