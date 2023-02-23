@@ -38,9 +38,9 @@
         <config-file target="*-Info.plist" parent="NSLocationAlwaysAndWhenInUseUsageDescription">
             <string>This app would like to scan for iBeacons both while in use and while in the background.</string>
         </config-file>
-
-        <header-file src="src/ios/BeaconPlugin.h"/>
-        <source-file src="src/ios/BeaconPlugin.m"/>
+        
+        <source-file src="src/ios/BeaconPlugin.swift"/>
+        <source-file src="src/ios/Item.swift"/>
         
         <framework src="CoreBluetooth.framework" />
         <framework src="CoreLocation.framework" />
