@@ -7,90 +7,135 @@
 
 import UIKit
 import CoreLocation
+import CoreBluetooth
 
 let storedItemsKey = "storedItems"
 
-@objc(BeaconPlugin) class BeaconPlugin: CDVPlugin, CLLocationManagerDelegate {
+@objc(BeaconPlugin) class BeaconPlugin : CDVPlugin, CLLocationManagerDelegate, CBPeripheralManagerDelegate {
+
+    var locationManager: CLLocationManager?
+    var peripheralManager: CBPeripheralManager?
+
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+        switch peripheral.state {
+            case .unknown:
+                print("Bluetooth Device is UNKNOWN")
+            case .unsupported:
+                print("Bluetooth Device is UNSUPPORTED")
+            case .unauthorized:
+                print("Bluetooth Device is UNAUTHORIZED")
+            case .resetting:
+                print("Bluetooth Device is RESETTING")
+            case .poweredOff:
+                print("Bluetooth Device is POWERED OFF")
+            case .poweredOn:
+                print("Bluetooth Device is POWERED ON")
+            @unknown default:
+                print("Unknown State")
+            }
+    }
+
 
     var items = [Item]()
-    var locationManager: CLLocationManager!
+
+    @objc(test:)
+    func test(_ command: CDVInvokedUrlCommand) {
+
+    }
     
 
-    override func pluginInitialize() {
-        print("Inside Init")
-        locationManager.delegate = self
-        var authStatus = CLLocationManager.authorizationStatus()
-        print("Auth Status", authStatus)
-        locationManager.requestAlwaysAuthorization()
-    }
+    @objc(addBeacon:)
+    func addBeacon(item: Item) {
+    items.append(item)
+    startMonitoringItem(item)
+    persistItems()
+  }
     
-   @objc(locationManager:) func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        print("Auth Status", status)
-        if status == .authorizedAlways {
-            if CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {
-                if CLLocationManager.isRangingAvailable() {
-                    startScanning()
-                }
-            }
-        }
-    }
-    
-   @objc(startScanning:) func startScanning() {
-    
-        print("Inside StartScanning")
+@objc(startScanning)
+func startScanning() {
+    print("Start Scanning is fired!!")
         let uuid = UUID(uuidString: "e2c56db5-dffb-5a00-0000-d0f5a71096e1")!
         let beaconRegion = CLBeaconRegion(proximityUUID: uuid, major: 1, minor: 1000, identifier: "Equeo_Beacon")
 
-        locationManager.startMonitoring(for: beaconRegion)
-        locationManager.startRangingBeacons(in: beaconRegion)
-        
+        locationManager!.startMonitoring(for: beaconRegion)
+        locationManager!.startRangingBeacons(in: beaconRegion)
     }
-    
-    @objc(locationManager:) func locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion) {
-        if beacons.count > 0 {
-            updateDistance(beacons[0].proximity)
-        } else {
-            updateDistance(.unknown)
-        }
-    }
-    
-   @objc(updateDistance:) func updateDistance(_ distance: CLProximity) {
-        UIView.animate(withDuration: 0.8) {
-            switch distance {
-            case .unknown:
-                print("Beacon distance is unknown")
 
-            case .far:
-                print("Beacon distance is far")
-            case .near:
-                print("Beacon distance is near")
-            case .immediate:
-                print("Beacon distance is immediate")
-            @unknown default:
-                print("Error in distance")
-            }
+  func persistItems() {
+    var itemsData = [Data]()
+    for item in items {
+      let itemData = NSKeyedArchiver.archivedData(withRootObject: item)
+      itemsData.append(itemData)
+    }
+    UserDefaults.standard.set(itemsData, forKey: storedItemsKey)
+    UserDefaults.standard.synchronize()
+  }
+
+  func startMonitoringItem(_ item: Item) {
+    let beaconRegion = item.asBeaconRegion()
+    locationManager!.startMonitoring(for: beaconRegion)
+    locationManager!.startRangingBeacons(in: beaconRegion)
+  }
+
+    override func pluginInitialize() {
+        print("Init is fired!")
+        locationManager = CLLocationManager()
+        locationManager!.requestWhenInUseAuthorization()
+        peripheralManager = CBPeripheralManager()
+
+        loadItems()
+        startScanning()
+    }
+
+    func locationManager(_ manager: CLLocationManager,  didUpdateLocations locations: [CLLocation]) {
+        print("[MyPlugin] - received a location update")
+    }
+
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        switch status {
+        case .restricted, .denied:
+            print("[MyPlugin] - denied authorization")
+            break
+
+        case .authorizedWhenInUse:
+            print("[MyPlugin] - received when in use authorization")
+            break
+
+        case .authorizedAlways:
+            print("[MyPlugin] - received always usage authorization")
+            print("[MyPlugin] - starting significant location change monitoring")
+
+            // locationManager.startMonitoringSignificantLocationChanges();
+            break
+
+        case .notDetermined:
+            print("[MyPlugin] - status not determined")
+            break
         }
     }
-    
-    
-//    func loadItems() {
-//        print("Inside LoadItems")
-//      guard let storedItems = UserDefaults.standard.array(forKey: storedItemsKey) as? [Data] else { return }
-//      for itemData in storedItems {
-//        guard let item = NSKeyedUnarchiver.unarchiveObject(with: itemData) as? Item else { continue }
-//        items.append(item)
-//         startMonitoringItem(item)
-//      }
-//    }
-//    func startMonitoringItem(_ item: Item) {
-//      let beaconRegion = item.asBeaconRegion()
-//      locationManager.startMonitoring(for: beaconRegion)
-//      locationManager.startRangingBeacons(in: beaconRegion)
-//    }
-//
-//    func stopMonitoringItem(_ item: Item) {
-//      let beaconRegion = item.asBeaconRegion()
-//      locationManager.stopMonitoring(for: beaconRegion)
-//      locationManager.stopRangingBeacons(in: beaconRegion)
-//    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("[MyPlugin] - did fail with error was called")
+    }
+
+
+    func loadItems() {
+      guard let storedItems = UserDefaults.standard.array(forKey: storedItemsKey) as? [Data] else { return }
+      for itemData in storedItems {
+        guard let item = NSKeyedUnarchiver.unarchiveObject(with: itemData) as? Item else { continue }
+        items.append(item)
+          let result: () =  startMonitoringItem(item)
+          startMonitoringItem(item)
+          print("Start Monitoring result: ",result)
+      }
+    }
+
+ 
+
+    func stopMonitoringItem(_ item: Item) {
+      let beaconRegion = item.asBeaconRegion()
+      locationManager!.stopMonitoring(for: beaconRegion)
+      locationManager!.stopRangingBeacons(in: beaconRegion)
+    }
+
 }

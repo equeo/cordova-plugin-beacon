@@ -1,1 +1,6 @@
 node_modules/
+yarn.lock
+.idea/.gitignore
+.idea/cordova-plugin-beacon.iml
+.idea/modules.xml
+.idea/vcs.xml
