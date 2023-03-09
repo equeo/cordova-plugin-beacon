@@ -183,12 +183,12 @@ import CoreBluetooth
 
     /// - Tag: didRange
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
-        let message = ["message": "Beacon Started", "type": "meta"] as [AnyHashable : Any]
+        let beaconData = beacons.map { ["uuid": $0.uuid.uuidString, "major": $0.major.stringValue, "minor": $0.minor.stringValue, "rssi": $0.rssi] }
+        let jsonData = try? JSONSerialization.data(withJSONObject: beaconData, options: [])
+        let message = ["message": "Beacon Found", "data": beaconData, "type": "meta"] as [AnyHashable : Any]
         let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: message)
         result?.keepCallback = true
         self.commandDelegate.send(result, callbackId: callBackID)
         print("beacons", beacons)
-        
-        
     }
 }
