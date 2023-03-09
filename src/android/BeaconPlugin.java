@@ -48,8 +48,10 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
             ArrayList<Identifier> identifiers = new ArrayList<>();
             for (int index = 0; index < identifiersJSONArray.length(); index++) {
                 String current = identifiersJSONArray.getString(index);
-                if (current.equals("null")) identifiers.add(null);
-                else identifiers.add(Identifier.parse(current));
+                if (current.equals("null"))
+                    identifiers.add(null);
+                else
+                    identifiers.add(Identifier.parse(current));
             }
             return new Region(uniqueId, identifiers);
         } catch (JSONException e) {
@@ -63,8 +65,10 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
         regionObject.put("uniqueId", region.getUniqueId());
         JSONArray identifiersJSONArray = new JSONArray();
         for (Identifier id : region.getIdentifiers()) {
-            if (id == null) identifiersJSONArray.put(null);
-            else identifiersJSONArray.put(id.toString());
+            if (id == null)
+                identifiersJSONArray.put(null);
+            else
+                identifiersJSONArray.put(id.toString());
         }
         regionObject.put("identifiers", identifiersJSONArray);
         return regionObject;
@@ -81,15 +85,18 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
         object.put("serviceUuid", beacon.getServiceUuid());
 
         JSONArray dataFields = new JSONArray();
-        for (Long data : beacon.getDataFields()) dataFields.put(data.longValue());
+        for (Long data : beacon.getDataFields())
+            dataFields.put(data.longValue());
         object.put("dataFields", dataFields);
 
         JSONArray extraDataFields = new JSONArray();
-        for (Long data : beacon.getDataFields()) extraDataFields.put(data.longValue());
+        for (Long data : beacon.getDataFields())
+            extraDataFields.put(data.longValue());
         object.put("extraDataFields", extraDataFields);
 
         JSONArray identifiers = new JSONArray();
-        for (Identifier id : beacon.getIdentifiers()) identifiers.put(id.toString());
+        for (Identifier id : beacon.getIdentifiers())
+            identifiers.put(id.toString());
         object.put("identifiers", identifiers);
 
         object.put("distance", beacon.getDistance());
@@ -151,7 +158,8 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (AssertionError e) {
-            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Already monitoring for Region " + region.getUniqueId() + ".");
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR,
+                    "Already monitoring for Region " + region.getUniqueId() + ".");
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
@@ -207,7 +215,8 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (AssertionError e) {
-            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Already ranging for Region " + region.getUniqueId() + ".");
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR,
+                    "Already ranging for Region " + region.getUniqueId() + ".");
             result.setKeepCallback(true);
             ctx.sendPluginResult(result);
         } catch (JSONException e) {
@@ -260,7 +269,8 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
         Log.d(TAG, "didDetermineStateForRegion");
 
         CallbackContext ctx = monitorCallbackMap.get(region.getUniqueId());
-        if (ctx == null) return;
+        if (ctx == null)
+            return;
 
         try {
             JSONObject resultData = new JSONObject();
@@ -285,7 +295,8 @@ public class BeaconPlugin extends CordovaPlugin implements MonitorNotifier, Rang
         Log.d(TAG, "didRangeBeaconsInRegion");
 
         CallbackContext ctx = rangeCallbackMap.get(region.getUniqueId());
-        if (ctx == null) return;
+        if (ctx == null)
+            return;
 
         try {
             JSONObject resultData = new JSONObject();
