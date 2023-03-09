@@ -14,7 +14,8 @@ import CoreBluetooth
 
     var locationManager: CLLocationManager?
     var peripheralManager: CBPeripheralManager?
-
+    var callBackID: String = ""
+    
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         switch peripheral.state {
             case .unknown:
@@ -74,20 +75,98 @@ import CoreBluetooth
     }
 
     @objc(startMonitoring:)
-    func startMonitoring(_ command: CDVInvokedUrlCommand) {
+    func startMonitoring(_ command: CDVInvokedUrlCommand){
         let data = command.arguments[0] as! NSDictionary;
         let uuid = UUID(uuidString: data["uniqueId"] as! String)!;
 
         let constraint = CLBeaconIdentityConstraint(uuid: uuid)
         // self.beaconConstraints[constraint] = []
-
-        let beaconRegion = CLBeaconRegion(beaconIdentityConstraint: constraint, identifier: uuid.uuidString)
-        self.locationManager?.startMonitoring(for: beaconRegion)
-
-        // let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "addBeacon!")
-        // self.commandDelegate.send(result, callbackId: command.callbackId)
+        
+        if ((uuid) != nil){
+            
+            let beaconRegion = CLBeaconRegion(beaconIdentityConstraint: constraint, identifier: uuid.uuidString)
+            self.locationManager?.startMonitoring(for: beaconRegion)
+            
+            callBackID = command.callbackId ;
+            
+//            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Beacon Monitoring Started")
+//            result?.keepCallback = true
+//           self.commandDelegate.send(result, callbackId: command.callbackId)
+            
+        } else {
+            print("Invalid UUID!!")
+        }
+        
+        
+               
+        //
+        
+        //when this function is called save the callback id
+        // check if its already monitoing or not
+        // if no -> send type meta, and keep sending the callback data
+        // if yes -> send error
+         
     }
+    
+    @objc(stopMonitoring:)
+       func stopMonitoring(_ command: CDVInvokedUrlCommand) {
+           print("StopMonitoring is fired!")
+           for region in locationManager!.monitoredRegions {
+               locationManager?.stopMonitoring(for: region)
+               locationManager?.stopRangingBeacons(in: region as! CLBeaconRegion)
+           }
+           
+           
+       }
+    
+    @objc(startRanging:)
+     func startRanging(_ command: CDVInvokedUrlCommand){
+         let data = command.arguments[0] as! NSDictionary;
+         let uuid = UUID(uuidString: data["uniqueId"] as! String)!;
 
+         let constraint = CLBeaconIdentityConstraint(uuid: uuid)
+         // self.beaconConstraints[constraint] = []
+
+         let beaconRegion = CLBeaconRegion(beaconIdentityConstraint: constraint, identifier: uuid.uuidString)
+         self.locationManager?.startRangingBeacons(in: beaconRegion)
+         
+         
+          let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Start Ranging!")
+          result?.keepCallback = true
+          self.commandDelegate.send(result, callbackId: command.callbackId)
+         
+         
+         //when this function is called save the callback id
+         // create a hashmap of the callback id
+         // check if its already monitoing or not
+         // if no -> send type meta, and keep sending the callback data
+         // if yes -> send error
+          
+     }
+     
+     @objc(stopRanging:)
+     func stopRanging(_ command: CDVInvokedUrlCommand) {
+         let data = command.arguments[0] as! NSDictionary;
+         let uuid = UUID(uuidString: data["uniqueId"] as! String)!;
+
+         let constraint = CLBeaconIdentityConstraint(uuid: uuid)
+         // self.beaconConstraints[constraint] = []
+         _ = CLBeaconRegion(beaconIdentityConstraint: constraint, identifier: uuid.uuidString)
+         
+         let monitoredRegion = self.locationManager?.monitoredRegions;
+         print("monitoredRegion for Ranging",monitoredRegion ?? "NO REGION");
+ //        if monitoredRegion.identifier == uuid {
+ //            //self.locationManager?.stopMonitoring(for: beaconRegion);
+ //           // return true;
+ //            print("Identifier",monitoredRegion.identifier );
+ //        }
+ //        else
+ //            {
+ //                return false;
+ //            }
+         
+     }
+    
     // - Tag: didDetermineState
     func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
         let beaconRegion = region as? CLBeaconRegion
@@ -99,14 +178,17 @@ import CoreBluetooth
             manager.stopRangingBeacons(satisfying: beaconRegion!.beaconIdentityConstraint)
         }
     }
+    
 
 
     /// - Tag: didRange
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
-        /*
-         Beacons are categorized by proximity. A beacon can satisfy
-         multiple constraints and can be displayed multiple times.
-         */
+        let message = ["message": "Beacon Started", "type": "meta"] as [AnyHashable : Any]
+        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: message)
+        result?.keepCallback = true
+        self.commandDelegate.send(result, callbackId: callBackID)
         print("beacons", beacons)
+        
+        
     }
 }
