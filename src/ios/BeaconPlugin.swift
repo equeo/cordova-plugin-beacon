@@ -189,6 +189,5 @@ import CoreBluetooth
         let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: message)
         result?.keepCallback = true
         self.commandDelegate.send(result, callbackId: callBackID)
-        print("beacons", beacons)
     }
 }
